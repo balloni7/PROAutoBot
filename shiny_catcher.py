@@ -161,6 +161,11 @@ def main(nTiles, afk_interval=600, afk_duration=180,
 
 
 
+
+
+
+
+
 if __name__ == "__main__":
     # Set up argument parser for cmd
     parser = argparse.ArgumentParser(description='PRO Shiny Hunter with AFK Timer')
