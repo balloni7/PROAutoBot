@@ -11,7 +11,7 @@ import ctypes
 
 import time
 pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
-
+import configparser
 
 class PokemonElementsOCR:
     def __init__(self):
@@ -243,10 +243,13 @@ class VisualCalibrator:
 
 
 class CalibrationToolUI:
-    def __init__(self, detector):
-        self.detector = detector
+    def __init__(self):
+        self.config = configparser.ConfigParser()
+        self.detector = PokemonElementsOCR()
         self.running = True
         self._setup_menu()
+
+        self.config.read("CONFIG.ini")
 
     def _setup_menu(self):
         """Define menu structure"""
@@ -254,6 +257,7 @@ class CalibrationToolUI:
             "header": self._create_header,
             "1": {"label": "Change name region", "action": self.detector.calibrate_name_position},
             "2": {"label": "Detect name", "action": self.detector.detect_pokemon_name},
+            "save": {"label": "Save", "action": self._save_config},
             "exit": {"label": "Exit", "action": self._exit_tool}
         }
 
@@ -309,6 +313,12 @@ class CalibrationToolUI:
         print("\nExiting calibration tool...")
         self.running = False
 
+    def _save_config(self):
+        self.config["OCR"]["nameRegion"] = ','.join(map(str, self.detector.name_region))
+        with open('CONFIG.ini', 'w') as configfile:
+            self.config.write(configfile)
+        print("Configuration saved successfully!")
+
     def run(self):
         """Main application loop"""
         self.menu["header"]()
@@ -325,10 +335,10 @@ class CalibrationToolUI:
                 print("Invalid selection!")
 
 
+
 # Usage example:
 if __name__ == "__main__":
-    detector = PokemonElementsOCR()
-    ui = CalibrationToolUI(detector)
+    ui = CalibrationToolUI()
 
     try:
         ui.run()
