@@ -12,6 +12,7 @@ import ctypes
 import time
 pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
 import configparser
+import os
 
 class PokemonElementsOCR:
     def __init__(self):
@@ -243,13 +244,17 @@ class VisualCalibrator:
 
 
 class CalibrationToolUI:
-    def __init__(self):
-        self.config = configparser.ConfigParser()
+    def __init__(self, config_path="CONFIG.ini"):
+        self.configParser = configparser.ConfigParser()
         self.detector = PokemonElementsOCR()
         self.running = True
         self._setup_menu()
 
-        self.config.read("CONFIG.ini")
+        if not os.path.exists(config_path):
+            self._create_default_config(config_path)
+        else:
+            self.configParser.read(config_path)
+
 
     def _setup_menu(self):
         """Define menu structure"""
@@ -314,10 +319,45 @@ class CalibrationToolUI:
         self.running = False
 
     def _save_config(self):
-        self.config["OCR"]["nameRegion"] = ','.join(map(str, self.detector.name_region))
+        self.configParser["OCR"]["nameRegion"] = ','.join(map(str, self.detector.name_region))
         with open('CONFIG.ini', 'w') as configfile:
-            self.config.write(configfile)
+            self.configParser.write(configfile)
         print("Configuration saved successfully!")
+
+    def _create_default_config(self, config_path='CONFIG.ini'):
+        """Generate default configuration file if missing"""
+
+        # Movement Settings
+        self.configParser['Movement'] = {
+            'ntiles': '5',
+            'afk_interval': '600',
+            'afk_duration': '180',
+            'afk_randomness': '0.2',
+            'speed': '7.5'
+        }
+
+        # OCR Settings
+        self.configParser['OCR'] = {
+            'name_region': '0,0,0,0',
+            'shiny_threshold': '0.8',
+            'battle_threshold': '0.8'
+        }
+
+        # Advanced Settings
+        self.configParser['Advanced'] = {
+            'scan_interval': '0.1',
+            'move_delay': '0.01'
+        }
+
+        # Files Section
+        self.configParser['Files'] = {
+            'shiny_template': 'shiny_message.png',
+            'battle_template': 'battle_template.png'
+        }
+
+        with open(config_path, 'w') as configfile:
+            self.configParser.write(configfile)
+        print(f"Created default config file at {config_path}")
 
     def run(self):
         """Main application loop"""
