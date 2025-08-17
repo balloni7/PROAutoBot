@@ -31,7 +31,7 @@ class ShinyCatcher:
                     'afk_interval': config.getfloat('Movement', 'afk_interval'),
                     'afk_duration': config.getfloat('Movement', 'afk_duration'),
                     'afk_randomness': config.getfloat('Movement', 'afk_randomness'),
-                    'speed': config.getfloat('Movement', 'speed'),
+                    'movement_speed': config.getfloat('Movement', 'movement_speed'),
                     'min_move_time': config.getfloat('Movement', 'min_move_time'),
                     'starting_direction': config.get('Movement', 'starting_direction')
                 },
@@ -44,7 +44,7 @@ class ShinyCatcher:
                     'scan_interval': config.getfloat('Advanced', 'scan_interval'),
                     'move_delay': config.getfloat('Advanced', 'move_delay')
                 },
-                'files':{
+                'files': {
                     'shiny_template': config.get('Files', 'shiny_template'),
                     'battle_template': config.get('Files', 'battle_template')
                 }
@@ -81,7 +81,7 @@ class ShinyCatcher:
 
     def _load_starting_direction(self):
         """Load the starting direction"""
-        if self.config["movement"]["starting_dirction"] == "left":
+        if self.config["movement"]["starting_direction"] == "left":
             return "a"
         else:
             return "d"
@@ -145,14 +145,14 @@ class ShinyCatcher:
     def main(self):
         """Main execution loop"""
         movement = self.config["movement"]
-        files = self.config["files"]
+
 
         print(f"Starting shiny hunter for {movement["ntiles"]} tiles...")
         print(f"AFK settings: ~{movement["afk_interval"] / 60:.1f}min active, ~{movement["afk_duration"] / 60:.1f}min breaks")
 
         # Movement configuration
         base_move_time = movement["ntiles"] / movement["movement_speed"]
-        min_move_time = max(movement["min_movement_time"], base_move_time * 0.5)
+        min_move_time = max(movement["min_move_time"], base_move_time * 0.5)
         max_move_time = base_move_time * 0.8
 
         self.next_afk_time = time.time() + self._get_random_afk_interval()
@@ -162,24 +162,24 @@ class ShinyCatcher:
                 current_time = time.time()
 
                 # AFK Check
-                if current_time >= next_afk_time:
+                if current_time >= self.next_afk_time:
                     # Calculate random AFK duration (exponential distribution)
                     afk_time = min(movement["afk_duration"] * 2,
                                    random.expovariate(1 / (movement["afk_duration"] * (1 - movement["afk_randomness"]))))
 
                     print(f"\n--- Going AFK for {afk_time / 60:.1f} minutes ---")
-                    keyboard.release(current_direction)
+                    keyboard.release(self.current_direction)
                     time.sleep(afk_time)
                     print("--- Returning from AFK ---\n")
 
                     # Reset next AFK time with randomness
-                    next_afk_time = time.time() + random.normalvariate(
+                    self.next_afk_time = time.time() + random.normalvariate(
                         movement["afk_interval"], movement["afk_interval"] * movement["afk_randomness"])
 
                     # Reset movement
-                    current_direction = 'a'
-                    next_switch_time = time.time() + random.uniform(min_move_time, max_move_time)
-                    keyboard.press(current_direction)
+                    self.current_direction = 'a'
+                    self.next_switch_time = time.time() + random.uniform(min_move_time, max_move_time)
+                    keyboard.press(self.current_direction)
 
                 # Shiny check
                 if self.is_shiny_present():
@@ -188,18 +188,18 @@ class ShinyCatcher:
 
                 # Battle handling
                 if self.is_in_battle():
-                    keyboard.release(current_direction)
+                    keyboard.release(self.current_direction)
                     self.run_from_battle()
-                    next_switch_time = time.time() + random.uniform(min_move_time, max_move_time)
-                    keyboard.press(current_direction)
+                    self.next_switch_time = time.time() + random.uniform(min_move_time, max_move_time)
+                    keyboard.press(self.current_direction)
 
                 # Movement control
-                if current_time >= next_switch_time:
-                    keyboard.release(current_direction)
-                    current_direction = 'd' if current_direction == 'a' else 'a'
+                if current_time >= self.next_switch_time:
+                    keyboard.release(self.current_direction)
+                    self.current_direction = 'd' if self.current_direction == 'a' else 'a'
                     move_duration = random.uniform(min_move_time, max_move_time)
-                    next_switch_time = current_time + move_duration
-                    keyboard.press(current_direction)
+                    self.next_switch_time = current_time + move_duration
+                    keyboard.press(self.current_direction)
 
                 # Sleep between Checks
                 time.sleep(0.1)
@@ -212,5 +212,3 @@ class ShinyCatcher:
 if __name__ == "__main__":
     sc = ShinyCatcher()
     sc.main()
-
-    #Falta testar

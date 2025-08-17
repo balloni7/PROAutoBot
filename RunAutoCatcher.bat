@@ -3,10 +3,10 @@
 if exist "%~dp0venv\Scripts\python.exe" (
     echo Found venv - Running with virtual environment...
     call "%~dp0venv\Scripts\activate.bat"
-    python "%~dp0shiny_catcher.py" %*
+    python "%~dp0PythonScripts\shiny_catcher.py" %*
     pause
 ) else (
     echo No venv found - Running with system Python...
-    python "%~dp0shiny_catcher.py" %*
+    python "%~dp0PythonScripts\shiny_catcher.py" %*
     pause
 )

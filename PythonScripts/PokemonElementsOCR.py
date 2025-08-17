@@ -31,7 +31,7 @@ class PokemonElementsOCR:
     def _load_pokemon_names(self):
         """Load a list of all possible Pokémon names"""
         try:
-            with open('pokemon_names.txt', 'r') as f:
+            with open('Resources/pokemon_names.txt', 'r') as f:
                 return [name.strip().lower() for name in f.readlines()]
         except FileNotFoundError:
             print("Warning: pokemon_names.txt not found. Using fallback list.")
@@ -333,7 +333,10 @@ class CalibrationToolUI:
             'afk_interval': '600',
             'afk_duration': '180',
             'afk_randomness': '0.2',
-            'speed': '7.5'
+            'movement_speed': '7.5',
+            'min_move_time': '0.1',
+            'starting_direction': 'left'
+
         }
 
         # OCR Settings
@@ -351,8 +354,8 @@ class CalibrationToolUI:
 
         # Files Section
         self.configParser['Files'] = {
-            'shiny_template': 'shiny_message.png',
-            'battle_template': 'battle_template.png'
+            'shiny_template': 'Resources/shiny_message.png',
+            'battle_template': 'Resources/battle_template.png'
         }
 
         with open(config_path, 'w') as configfile:
