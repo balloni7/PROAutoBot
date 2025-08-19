@@ -7,58 +7,22 @@ import sys
 import random
 
 import os
-import configparser
-
+from ConfigHandler import ConfigHandler
 class ShinyCatcher:
     def __init__(self, config_path="CONFIG.ini"):
-        self.config = self._load_config(config_path)
+        self.configHandler = ConfigHandler(config_path)
+        self.config_settings = self.configHandler.load()
         self.shiny_template = self._load_shiny_template()
         self.battle_template = self._load_battle_template()
         self.current_direction = self._load_starting_direction()
         self.next_switch_time = 0
         self.next_afk_time = time.time() + self._get_random_afk_interval()
 
-
-    def _load_config(self,config_path):
-        """Load and parse configuration file"""
-        config = configparser.ConfigParser()
-        config.read(config_path)
-
-        try:
-            return {
-                'movement': {
-                    'ntiles': config.getint('Movement', 'ntiles'),
-                    'afk_interval': config.getfloat('Movement', 'afk_interval'),
-                    'afk_duration': config.getfloat('Movement', 'afk_duration'),
-                    'afk_randomness': config.getfloat('Movement', 'afk_randomness'),
-                    'movement_speed': config.getfloat('Movement', 'movement_speed'),
-                    'min_move_time': config.getfloat('Movement', 'min_move_time'),
-                    'starting_direction': config.get('Movement', 'starting_direction')
-                },
-                'ocr': {
-                    'name_region': tuple(map(int, config.get('OCR', 'name_region').split(','))),
-                    'shiny_threshold': config.getfloat('OCR', 'shiny_threshold'),
-                    'battle_threshold': config.getfloat('OCR', 'battle_threshold')
-                },
-                'advanced': {
-                    'scan_interval': config.getfloat('Advanced', 'scan_interval'),
-                    'move_delay': config.getfloat('Advanced', 'move_delay')
-                },
-                'files': {
-                    'shiny_template': config.get('Files', 'shiny_template'),
-                    'battle_template': config.get('Files', 'battle_template')
-                }
-            }
-        except (ValueError, configparser.Error) as e:
-            print(f"Error reading config: {e}")
-            raise
-
-
-
     def _load_shiny_template(self):
         """Load the shiny message template image"""
+
         try:
-            template = cv2.imread(self.config["files"]["shiny_template"], 0)
+            template = cv2.imread(self.config_settings["files"]["shiny_template"], 0)
             if template is None:
                 raise FileNotFoundError
             return template
@@ -70,7 +34,7 @@ class ShinyCatcher:
     def _load_battle_template(self):
         """Load the shiny message template image"""
         try:
-            template = cv2.imread(self.config["files"]["battle_template"], 0)
+            template = cv2.imread(self.config_settings["files"]["battle_template"], 0)
             if template is None:
                 raise FileNotFoundError
             return template
@@ -81,7 +45,7 @@ class ShinyCatcher:
 
     def _load_starting_direction(self):
         """Load the starting direction"""
-        if self.config["movement"]["starting_direction"] == "left":
+        if self.config_settings["movement"]["starting_direction"] == "left":
             return "a"
         else:
             return "d"
@@ -138,21 +102,27 @@ class ShinyCatcher:
 
     def _get_random_afk_interval(self):
         """Calculate random AFK interval"""
-        cfg = self.config['movement']
-        return random.normalvariate(cfg['afk_interval'], cfg['afk_interval'] * cfg['afk_randomness'])
+        afk_interval = self.config_settings["movement"]["afk_interval"]
+        afk_randomness = self.config_settings["movement"]["afk_randomness"]
+
+        return random.normalvariate(afk_interval, afk_interval * afk_randomness)
 
 
     def main(self):
         """Main execution loop"""
-        movement = self.config["movement"]
+        ntiles = self.config_settings["movement"]["ntiles"]
+        afk_interval = self.config_settings["movement"]["afk_interval"]
+        afk_duration = self.config_settings["movement"]["afk_duration"]
+        movement_speed = self.config_settings["movement"]["movement_speed"]
+        min_move_time = self.config_settings["movement"]["min_move_time"]
+        afk_randomness = self.config_settings["movement"]["afk_randomness"]
 
-
-        print(f"Starting shiny hunter for {movement["ntiles"]} tiles...")
-        print(f"AFK settings: ~{movement["afk_interval"] / 60:.1f}min active, ~{movement["afk_duration"] / 60:.1f}min breaks")
+        print(f"Starting shiny hunter for {ntiles} tiles...")
+        print(f"AFK settings: ~{afk_interval / 60:.1f}min active, ~{afk_duration / 60:.1f}min breaks")
 
         # Movement configuration
-        base_move_time = movement["ntiles"] / movement["movement_speed"]
-        min_move_time = max(movement["min_move_time"], base_move_time * 0.5)
+        base_move_time = ntiles / movement_speed
+        min_move_time = max(min_move_time, base_move_time * 0.5)
         max_move_time = base_move_time * 0.8
 
         self.next_afk_time = time.time() + self._get_random_afk_interval()
@@ -164,8 +134,8 @@ class ShinyCatcher:
                 # AFK Check
                 if current_time >= self.next_afk_time:
                     # Calculate random AFK duration (exponential distribution)
-                    afk_time = min(movement["afk_duration"] * 2,
-                                   random.expovariate(1 / (movement["afk_duration"] * (1 - movement["afk_randomness"]))))
+                    afk_time = min(afk_duration* 2,
+                                   random.expovariate(1 / (afk_duration * (1 - afk_randomness))))
 
                     print(f"\n--- Going AFK for {afk_time / 60:.1f} minutes ---")
                     keyboard.release(self.current_direction)
@@ -174,7 +144,7 @@ class ShinyCatcher:
 
                     # Reset next AFK time with randomness
                     self.next_afk_time = time.time() + random.normalvariate(
-                        movement["afk_interval"], movement["afk_interval"] * movement["afk_randomness"])
+                        afk_interval, afk_interval * afk_randomness)
 
                     # Reset movement
                     self.current_direction = 'a'

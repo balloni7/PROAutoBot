@@ -10,28 +10,25 @@ from PIL import Image, ImageTk
 import ctypes
 
 import time
+from ConfigHandler import ConfigHandler
+
 pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
-import configparser
-import os
 
 class PokemonElementsOCR:
-    def __init__(self):
+    def __init__(self, names_file="Resources/pokemon_names.txt"):
+        self.names_file = names_file
         self.calibrator = VisualCalibrator()
-
-        # Game Elements Coordinates
+        # Game Elements CoordinatesS
         self.name_region = None  # (left, top, width, height)
-
         # Load a list of all Pokémon names
         self.known_pokemon = self._load_pokemon_names()
-
         # OCR configuration
         self.ocr_config = r'--psm 7 --oem 3 -c tessedit_char_whitelist=ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz- '
-
 
     def _load_pokemon_names(self):
         """Load a list of all possible Pokémon names"""
         try:
-            with open('Resources/pokemon_names.txt', 'r') as f:
+            with open(self.names_file, 'r') as f:
                 return [name.strip().lower() for name in f.readlines()]
         except FileNotFoundError:
             print("Warning: pokemon_names.txt not found. Using fallback list.")
@@ -245,16 +242,10 @@ class VisualCalibrator:
 
 class CalibrationToolUI:
     def __init__(self, config_path="CONFIG.ini"):
-        self.configParser = configparser.ConfigParser()
+        self.configHandler = ConfigHandler(config_path)
         self.detector = PokemonElementsOCR()
         self.running = True
         self._setup_menu()
-
-        if not os.path.exists(config_path):
-            self._create_default_config(config_path)
-        else:
-            self.configParser.read(config_path)
-
 
     def _setup_menu(self):
         """Define menu structure"""
@@ -299,7 +290,6 @@ class CalibrationToolUI:
                 print(f"[{key}] {item['label']}")
         print("\n" + "=" * 50)
 
-
     def _get_choice(self):
         """Get user input with validation"""
         while self.running:
@@ -319,48 +309,12 @@ class CalibrationToolUI:
         self.running = False
 
     def _save_config(self):
-        self.configParser["OCR"]["nameRegion"] = ','.join(map(str, self.detector.name_region))
-        with open('CONFIG.ini', 'w') as configfile:
-            self.configParser.write(configfile)
+        self.configHandler.configParser["OCR"]["name_region"] = ','.join(map(str, self.detector.name_region))
+        self.configHandler.save_config()
         print("Configuration saved successfully!")
 
-    def _create_default_config(self, config_path='CONFIG.ini'):
-        """Generate default configuration file if missing"""
-
-        # Movement Settings
-        self.configParser['Movement'] = {
-            'ntiles': '5',
-            'afk_interval': '600',
-            'afk_duration': '180',
-            'afk_randomness': '0.2',
-            'movement_speed': '7.5',
-            'min_move_time': '0.1',
-            'starting_direction': 'left'
-
-        }
-
-        # OCR Settings
-        self.configParser['OCR'] = {
-            'name_region': '0,0,0,0',
-            'shiny_threshold': '0.8',
-            'battle_threshold': '0.8'
-        }
-
-        # Advanced Settings
-        self.configParser['Advanced'] = {
-            'scan_interval': '0.1',
-            'move_delay': '0.01'
-        }
-
-        # Files Section
-        self.configParser['Files'] = {
-            'shiny_template': 'Resources/shiny_message.png',
-            'battle_template': 'Resources/battle_template.png'
-        }
-
-        with open(config_path, 'w') as configfile:
-            self.configParser.write(configfile)
-        print(f"Created default config file at {config_path}")
+    def _create_default_config(self):
+        self.configHandler.generate_default_config_file()
 
     def run(self):
         """Main application loop"""
@@ -376,7 +330,6 @@ class CalibrationToolUI:
                 self.menu[choice]["action"]()
             else:
                 print("Invalid selection!")
-
 
 
 # Usage example:
