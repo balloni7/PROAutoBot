@@ -36,10 +36,9 @@ class ConfigHandler:
         self.configParser = configparser.ConfigParser()
         self.config_path = config_path
         self.schema = CONFIG_SCHEMA
+        self.settings = self._load()
 
-        self.load()
-
-    def load(self):
+    def _load(self):
         """Load or create config with automatic validation"""
 
         # Create default if missing
@@ -73,14 +72,13 @@ class ConfigHandler:
 
         return default_dict
 
-
     def _parse(self):
-        """Convert ConfigParser to final format using schema"""
+        """Convert ConfigParser to final format using schema returning a dictionary with all settings"""
 
         # Use the Schema to convert the values (strings) into its correct datatypes
         parsed = {}
         for section, settings in self.schema.items():
-            parsed[section.lower()] = {
+            parsed[section] = {
                 key: settings[key]['type'](self.configParser[section][key])
                 for key in settings
             }

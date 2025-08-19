@@ -2,3 +2,6 @@ venv/
 .idea/
 TODO.txt
 CONFIG.ini
+CommitMessage.txt
+EncounterLogs/
+PythonScripts/__pycache__/
