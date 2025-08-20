@@ -29,18 +29,11 @@ class ShinyCatcher:
             return "d"
 
     @staticmethod
-    def run_from_battle():
-        """Runs from battle"""
-        keyboard.press('4')
-        time.sleep(0.1)
-        keyboard.release('4')
-
-    @staticmethod
-    def move_character(direction):
-        """Move the character left or right"""
-        keyboard.press(direction)
-        time.sleep(0.01)  # Short movement duration
-        keyboard.release(direction)
+    def _press_key(key, delay=0.1):
+        """Helper: Press and release key with delay"""
+        keyboard.press(key)
+        time.sleep(delay)
+        keyboard.release(key)
 
     def _get_random_afk_interval(self):
         """Calculate random AFK interval"""
@@ -60,12 +53,59 @@ class ShinyCatcher:
         self.encounterCounter.save_to_csv()
 
     @staticmethod
-    def play_sound(sound_file):
+    def _play_sound(sound_file):
         """Play sound using Windows built-in player"""
         try:
             winsound.PlaySound(sound_file, winsound.SND_FILENAME)
         except Exception as e:
             print(f"Sound error: {e}")
+
+    def _catch_pokemon(self):
+        """Catches Pokemons according to the configs"""
+        sync_enabled = self.configHandler.settings["AutoCatch"]["sync_enabled"]
+        fs_enabled = self.configHandler.settings["AutoCatch"]["fs_enabled"]
+        fs_pokemon_position = self.configHandler.settings["AutoCatch"]["fs_pokemon_position"]
+        fs_move_position =  self.configHandler.settings["AutoCatch"]["fs_move_position"]
+        ball_to_use = self.configHandler.settings["AutoCatch"]["ball_to_use"]
+
+        # False swipe (if enabled)
+        if fs_enabled:
+            # Switch to FS pokemon if needed
+            print("step1")
+            if sync_enabled or fs_pokemon_position != 1:
+                if self._wait_until_action_ready():
+                    time.sleep(0.1)
+                    self._press_key("2") #Open switch menu
+                    time.sleep(0.5)
+                    self._press_key(fs_pokemon_position)
+            print("step2")
+            # Use False Swipe
+            if self._wait_until_action_ready():
+                time.sleep(0.1)
+                self._press_key("2")  # Open attack menu
+                time.sleep(0.5)
+                self._press_key(fs_move_position)
+
+        # Always throw ball
+        while self.elementsOCR.is_in_battle():
+            print("step3")
+            if self._wait_until_action_ready():
+                time.sleep(0.1)
+                self._press_key("3")
+                self._press_key(ball_to_use)
+            time.sleep(0.5)
+
+    def _wait_until_action_ready(self,timeout=10, check_interval=0.2):
+        """Wait until icon is ready or timeout"""
+        start_time = time.time()
+
+        while time.time() - start_time < timeout:
+            if self.elementsOCR.is_action_ready():
+                return True
+            time.sleep(check_interval)
+
+        return False
+
 
     def main(self):
         """Main execution loop"""
@@ -112,23 +152,25 @@ class ShinyCatcher:
 
                 # Shiny check
                 if self.elementsOCR.is_shiny_present():
-                    self.play_sound(self.configHandler.settings["Files"]["shiny_sound"])
+                    self._play_sound(self.configHandler.settings["Files"]["shiny_sound"])
                     print("SHINY FOUND! Stopping script.")
                     break
 
                 # Battle handling
                 if self.elementsOCR.is_in_battle():
+                    keyboard.release(self.current_direction)
                     self.encounterCounter.record_encounter()
 
                     pokemon_name = self.elementsOCR.detect_pokemon_name()
                     if pokemon_name in self.configHandler.settings["OCR"]["wanted_pokemon"]:
-                        self.play_sound(self.configHandler.settings["Files"]["wanted_sound"])
+                        self._play_sound(self.configHandler.settings["Files"]["wanted_sound"])
+                        self._catch_pokemon()
 
-                    keyboard.release(self.current_direction)
-
-                    while self.elementsOCR.is_in_battle():
-                        time.sleep(0.5)
-                        self.run_from_battle()
+                    #Run
+                    else:
+                        while self.elementsOCR.is_in_battle():
+                            self._press_key("4")
+                            time.sleep(0.5)
 
                     self.next_switch_time = time.time() + random.uniform(min_move_time, max_move_time)
                     keyboard.press(self.current_direction)

@@ -10,6 +10,8 @@ import ctypes
 import time
 import sys
 import os
+
+from ConfigHandler import ConfigHandler
 pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
 
 class PokemonElementsOCR:
@@ -17,9 +19,11 @@ class PokemonElementsOCR:
         self.configHandler = config_handler
         self.calibrator = VisualCalibrator()
 
-        self.known_pokemon = self._load_pokemon_names(names_file=names_file)
-        self.shiny_template = self._load_shiny_template()
-        self.battle_template = self._load_battle_template()
+        self.known_pokemon = self._load_pokemon_names(self.configHandler.settings["Files"]["names_file"])
+        self.shiny_template = self._load_templates(self.configHandler.settings["Files"]["shiny_template"])
+        self.battle_template = self._load_templates(self.configHandler.settings["Files"]["battle_template"])
+        self.gray_action_template = self._load_templates(self.configHandler.settings["Files"]["gray_action_icon"],1)
+        self.red_action_template = self._load_templates(self.configHandler.settings["Files"]["red_action_icon"],1)
 
         self.ocr_config = r'--psm 7 --oem 3 -c tessedit_char_whitelist=ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz- '
 
@@ -91,30 +95,18 @@ class PokemonElementsOCR:
         print("\nCalibration cancelled.")
         return False
 
-    def _load_shiny_template(self):
-        """Load the shiny message template image"""
-
+    @staticmethod
+    def _load_templates(image_path, color_mode = 0):
+        """ Load the templates from image """
         try:
-            template = cv2.imread(self.configHandler.settings["Files"]["shiny_template"], 0)
+            template = cv2.imread(image_path, color_mode)
             if template is None:
                 raise FileNotFoundError
             return template
         except Exception as e:
-            print(f"Error loading shiny template image: {e}")
-            print("Please provide a 'shiny_message.png' file in the same directory.")
+            print(f"Error loading template image: {e}")
             sys.exit(1)
 
-    def _load_battle_template(self):
-        """Load the shiny message template image"""
-        try:
-            template = cv2.imread(self.configHandler.settings["Files"]["battle_template"], 0)
-            if template is None:
-                raise FileNotFoundError
-            return template
-        except Exception as e:
-            print(f"Error loading battle template image: {e}")
-            print("Please provide a 'battle_message.png' file in the same directory.")
-            sys.exit(1)
 
     def is_shiny_present(self):
         """Check if the shiny message is on screen"""
@@ -151,6 +143,28 @@ class PokemonElementsOCR:
             print(f"Error in battle detection: {e}")
             return False
 
+    def is_action_ready(self):
+        """
+        Check which template matches better: red (busy) or gray (ready)
+        Returns: True if ready (gray), False if busy (red)
+        """
+        # Capture current screen
+        screenshot = pyautogui.screenshot()
+        img = cv2.cvtColor(np.array(screenshot), cv2.COLOR_RGB2BGR)
+
+        # Match against both templates
+        red_match = cv2.matchTemplate(img, self.red_action_template, cv2.TM_CCOEFF_NORMED)
+        gray_match = cv2.matchTemplate(img, self.gray_action_template, cv2.TM_CCOEFF_NORMED)
+
+        # Get best match values
+        _, red_val, _, _ = cv2.minMaxLoc(red_match)
+        _, gray_val, _, _ = cv2.minMaxLoc(gray_match)
+
+        print(f"Red: {red_val:.3f}, Gray: {gray_val:.3f}")  # Debug info
+
+        # Return state based on which matches better
+        return gray_val > red_val
+
 
 class VisualCalibrator:
     def __init__(self):
@@ -169,7 +183,7 @@ class VisualCalibrator:
         """Create overlay window without transparency"""
         # Minimize console before showing overlay
         self._minimize_console()
-        time.sleep(0.1)
+        time.sleep(0.5)
 
         #Initial Setup
         self.root = tk.Tk()
@@ -299,3 +313,7 @@ class VisualCalibrator:
         if self.selection_made and self.final_coords:
             return self.final_coords
         return None
+
+if __name__ == '__main__':
+    c = ConfigHandler()
+    a = PokemonElementsOCR(c)

@@ -1,6 +1,5 @@
 import configparser
 import os
-from email.policy import default
 
 CONFIG_SCHEMA = {
     'Movement': {
@@ -24,13 +23,24 @@ CONFIG_SCHEMA = {
             'default': ()
         }
     },
+    'AutoCatch': {
+        'sync_enabled': {'type': lambda x: True if x == "True" else False, 'default': True },
+        'fs_enabled': {'type': lambda x: True if x == "True" else False , 'default':True},
+        'fs_pokemon_position': {'type': str, 'default': "2"},
+        'fs_move_position': {'type':str, 'default': "1"},
+        'repel_enabled': {'type':lambda x: True if x == "True" else False, 'default':False},
+        'ball_to_use': {'type': str, 'default': "1"}
+    },
     'Advanced': {
         'scan_interval': {'type': float, 'default': 0.1},
         'move_delay': {'type': float, 'default': 0.01}
     },
     'Files': {
+        'names_file': {'type': str, 'default': 'Resources/pokemon_names.txt'},
         'shiny_template': {'type': str, 'default': 'Resources/shiny_message.png'},
         'battle_template': {'type': str, 'default': 'Resources/battle_template.png'},
+        'gray_action_icon': {'type':str, 'default': 'Resources/gray_action_icon.png'},
+        'red_action_icon': {'type':str, 'default': 'Resources/red_action_icon.png'},
         'shiny_sound': {'type':str, 'default': 'Resources/ShinyEncounterSound.wav'},
         'wanted_sound': {'type':str, 'default': 'Resources/WantedEncounterSound.wav'}
     }
