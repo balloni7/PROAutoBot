@@ -19,37 +19,11 @@ class ShinyCatcher:
     def __init__(self, config_path="CONFIG.ini"):
         self.configHandler = ConfigHandler(config_path)
         self.config_settings = self.configHandler.settings
-        self.encounterCounter = EncounterCounter()
-        self.shiny_template = self._load_shiny_template()
-        self.battle_template = self._load_battle_template()
+        self.elementsOCR = PokemonElementsOCR(self.configHandler)
+        self.encounterCounter = EncounterCounter(self.elementsOCR)
         self.current_direction = self._load_starting_direction()
         self.next_switch_time = 0
         self.next_afk_time = time.time() + self._get_random_afk_interval()
-
-    def _load_shiny_template(self):
-        """Load the shiny message template image"""
-
-        try:
-            template = cv2.imread(self.config_settings["Files"]["shiny_template"], 0)
-            if template is None:
-                raise FileNotFoundError
-            return template
-        except Exception as e:
-            print(f"Error loading shiny template image: {e}")
-            print("Please provide a 'shiny_message.png' file in the same directory.")
-            sys.exit(1)
-
-    def _load_battle_template(self):
-        """Load the shiny message template image"""
-        try:
-            template = cv2.imread(self.config_settings["Files"]["battle_template"], 0)
-            if template is None:
-                raise FileNotFoundError
-            return template
-        except Exception as e:
-            print(f"Error loading battle template image: {e}")
-            print("Please provide a 'battle_message.png' file in the same directory.")
-            sys.exit(1)
 
     def _load_starting_direction(self):
         """Load the starting direction"""
@@ -58,55 +32,19 @@ class ShinyCatcher:
         else:
             return "d"
 
-    def is_shiny_present(self):
-        """Check if the shiny message is on screen"""
-        screenshot = pyautogui.screenshot()
-        screenshot = cv2.cvtColor(np.array(screenshot), cv2.COLOR_RGB2GRAY)
-
-        # Template matching
-        res = cv2.matchTemplate(screenshot, self.shiny_template, cv2.TM_CCOEFF_NORMED)
-        threshold = 0.8
-        loc = np.where(res >= threshold)
-
-        return len(loc[0]) > 0
-
-
-    def run_from_battle(self):
+    @staticmethod
+    def run_from_battle():
         """Runs from battle"""
         keyboard.press('4')
         time.sleep(0.1)
         keyboard.release('4')
 
-
-    def move_character(self, direction):
+    @staticmethod
+    def move_character(direction):
         """Move the character left or right"""
         keyboard.press(direction)
         time.sleep(0.01)  # Short movement duration
         keyboard.release(direction)
-
-
-    def is_in_battle(self, threshold=0.8):
-        """Check if player is in battle"""
-
-        try:
-            # Load the battle template image
-            if self.battle_template is None:
-                raise FileNotFoundError(f"Battle template image not found at {os.path.abspath(os.path.dirname(__file__))}")
-
-            # Take screenshot of the game window
-            screenshot = pyautogui.screenshot()
-            screenshot_gray = cv2.cvtColor(np.array(screenshot), cv2.COLOR_RGB2GRAY)
-
-            # Perform template matching
-            res = cv2.matchTemplate(screenshot_gray, self.battle_template, cv2.TM_CCOEFF_NORMED)
-            _, max_val, _, _ = cv2.minMaxLoc(res)
-
-            # Return True if the match confidence exceeds the threshold
-            return max_val >= threshold
-
-        except Exception as e:
-            print(f"Error in battle detection: {e}")
-            return False
 
     def _get_random_afk_interval(self):
         """Calculate random AFK interval"""
@@ -124,8 +62,6 @@ class ShinyCatcher:
         self.encounterCounter.display_stats()
         self.encounterCounter.save_to_json()
         self.encounterCounter.save_to_csv()
-
-
 
     def main(self):
         """Main execution loop"""
@@ -171,16 +107,18 @@ class ShinyCatcher:
                     keyboard.press(self.current_direction)
 
                 # Shiny check
-                if self.is_shiny_present():
+                if self.elementsOCR.is_shiny_present():
                     print("SHINY FOUND! Stopping script.")
                     break
 
                 # Battle handling
-                if self.is_in_battle():
+                if self.elementsOCR.is_in_battle():
                     self.encounterCounter.record_encounter()
                     keyboard.release(self.current_direction)
-                    self.run_from_battle()
-                    time.sleep(2)
+                    while self.elementsOCR.is_in_battle():
+                        time.sleep(0.5)
+                        self.run_from_battle()
+
                     self.next_switch_time = time.time() + random.uniform(min_move_time, max_move_time)
                     keyboard.press(self.current_direction)
 
@@ -201,8 +139,8 @@ class ShinyCatcher:
 
 
 class EncounterCounter:
-    def __init__(self, save_path='EncounterLogs'):
-        self.elementsOCR = PokemonElementsOCR()
+    def __init__(self, elementsOCR ,save_path='EncounterLogs'):
+        self.elementsOCR = elementsOCR
         self.encounters = defaultdict(int)  # {pokemon_name: count}
         self.total_encounters = 0
         self.start_time = datetime.now()

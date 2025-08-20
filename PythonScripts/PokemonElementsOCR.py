@@ -4,35 +4,36 @@ import numpy as np
 import pyautogui
 import re
 from difflib import get_close_matches
-
 import tkinter as tk
 from PIL import Image, ImageTk
 import ctypes
-
 import time
-from ConfigHandler import ConfigHandler
-
+import sys
+import os
 pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
 
 class PokemonElementsOCR:
-    def __init__(self, config_handler=ConfigHandler(), names_file="Resources/pokemon_names.txt"):
+    def __init__(self, config_handler, names_file="Resources/pokemon_names.txt"):
         self.configHandler = config_handler
-        self.names_file = names_file
         self.calibrator = VisualCalibrator()
-        # Load a list of all Pokémon names
-        self.known_pokemon = self._load_pokemon_names()
-        # OCR configuration
+
+        self.known_pokemon = self._load_pokemon_names(names_file=names_file)
+        self.shiny_template = self._load_shiny_template()
+        self.battle_template = self._load_battle_template()
+
         self.ocr_config = r'--psm 7 --oem 3 -c tessedit_char_whitelist=ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz- '
 
-    def _load_pokemon_names(self):
+    @staticmethod
+    def _load_pokemon_names(names_file):
         """Load a list of all possible Pokémon names"""
         try:
-            with open(self.names_file, 'r') as f:
+            with open(names_file, 'r') as f:
                 return [name.strip().lower() for name in f.readlines()]
         except FileNotFoundError:
             print("Warning: pokemon_names.txt not found. Using fallback list.")
 
-    def _preprocess_image(self, image):
+    @staticmethod
+    def _preprocess_image(image):
         """Enhance image for better OCR results"""
         # Convert to grayscale
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
@@ -83,11 +84,72 @@ class PokemonElementsOCR:
         region = self.calibrator.get_selection()
         if region:
             self.configHandler.configParser["OCR"]["name_region"] = str(region)
+            self.configHandler.settings["OCR"]["name_region"] = region
             print(f"\nCalibration successful! New detection Pokemon name region: {region}")
             return True
 
         print("\nCalibration cancelled.")
         return False
+
+    def _load_shiny_template(self):
+        """Load the shiny message template image"""
+
+        try:
+            template = cv2.imread(self.configHandler.settings["Files"]["shiny_template"], 0)
+            if template is None:
+                raise FileNotFoundError
+            return template
+        except Exception as e:
+            print(f"Error loading shiny template image: {e}")
+            print("Please provide a 'shiny_message.png' file in the same directory.")
+            sys.exit(1)
+
+    def _load_battle_template(self):
+        """Load the shiny message template image"""
+        try:
+            template = cv2.imread(self.configHandler.settings["Files"]["battle_template"], 0)
+            if template is None:
+                raise FileNotFoundError
+            return template
+        except Exception as e:
+            print(f"Error loading battle template image: {e}")
+            print("Please provide a 'battle_message.png' file in the same directory.")
+            sys.exit(1)
+
+    def is_shiny_present(self):
+        """Check if the shiny message is on screen"""
+        screenshot = pyautogui.screenshot()
+        screenshot = cv2.cvtColor(np.array(screenshot), cv2.COLOR_RGB2GRAY)
+
+        # Template matching
+        res = cv2.matchTemplate(screenshot, self.shiny_template, cv2.TM_CCOEFF_NORMED)
+        threshold = 0.8
+        loc = np.where(res >= threshold)
+
+        return len(loc[0]) > 0
+
+    def is_in_battle(self, threshold=0.8):
+        """Check if player is in battle"""
+
+        try:
+            # Load the battle template image
+            if self.battle_template is None:
+                raise FileNotFoundError(f"Battle template image not found at {os.path.abspath(os.path.dirname(__file__))}")
+
+            # Take screenshot of the game window
+            screenshot = pyautogui.screenshot()
+            screenshot_gray = cv2.cvtColor(np.array(screenshot), cv2.COLOR_RGB2GRAY)
+
+            # Perform template matching
+            res = cv2.matchTemplate(screenshot_gray, self.battle_template, cv2.TM_CCOEFF_NORMED)
+            _, max_val, _, _ = cv2.minMaxLoc(res)
+
+            # Return True if the match confidence exceeds the threshold
+            return max_val >= threshold
+
+        except Exception as e:
+            print(f"Error in battle detection: {e}")
+            return False
 
 
 class VisualCalibrator:
