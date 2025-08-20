@@ -1,12 +1,13 @@
 import configparser
 import os
+from email.policy import default
 
 CONFIG_SCHEMA = {
     'Movement': {
         'ntiles': {'type': int, 'default': 15},
-        'afk_interval': {'type': float, 'default': 600},
-        'afk_duration': {'type': float, 'default': 180},
-        'afk_randomness': {'type': float, 'default': 0.2},
+        'afk_interval': {'type': float, 'default': 3600},
+        'afk_duration': {'type': float, 'default': 300},
+        'afk_randomness': {'type': float, 'default': 0.3},
         'movement_speed': {'type': float, 'default': 7.5},
         'min_move_time': {'type': float, 'default': 0.1},
         'starting_direction': {'type': str, 'default': 'left'}
@@ -17,7 +18,11 @@ CONFIG_SCHEMA = {
             'default': (0, 0, 300, 100)
         },
         'shiny_threshold': {'type': float, 'default': 0.8},
-        'battle_threshold': {'type': float, 'default': 0.8}
+        'battle_threshold': {'type': float, 'default': 0.8},
+        'wanted_pokemon': {
+            'type': lambda x: tuple(map(str, x.strip("()").replace(" ","").split(','))),
+            'default': ()
+        }
     },
     'Advanced': {
         'scan_interval': {'type': float, 'default': 0.1},
@@ -25,7 +30,9 @@ CONFIG_SCHEMA = {
     },
     'Files': {
         'shiny_template': {'type': str, 'default': 'Resources/shiny_message.png'},
-        'battle_template': {'type': str, 'default': 'Resources/battle_template.png'}
+        'battle_template': {'type': str, 'default': 'Resources/battle_template.png'},
+        'shiny_sound': {'type':str, 'default': 'Resources/ShinyEncounterSound.wav'},
+        'wanted_sound': {'type':str, 'default': 'Resources/WantedEncounterSound.wav'}
     }
 }
 

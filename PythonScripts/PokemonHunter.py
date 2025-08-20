@@ -1,20 +1,16 @@
-import pyautogui
-import cv2
-import numpy as np
 import time
 import keyboard
-import sys
 import random
-
 import os
 from ConfigHandler import ConfigHandler
-
 import json
 import csv
 from datetime import datetime
+import winsound
 from collections import defaultdict
-
 from PokemonElementsOCR import PokemonElementsOCR
+
+
 class ShinyCatcher:
     def __init__(self, config_path="CONFIG.ini"):
         self.configHandler = ConfigHandler(config_path)
@@ -63,6 +59,14 @@ class ShinyCatcher:
         self.encounterCounter.save_to_json()
         self.encounterCounter.save_to_csv()
 
+    @staticmethod
+    def play_sound(sound_file):
+        """Play sound using Windows built-in player"""
+        try:
+            winsound.PlaySound(sound_file, winsound.SND_FILENAME)
+        except Exception as e:
+            print(f"Sound error: {e}")
+
     def main(self):
         """Main execution loop"""
         ntiles = self.config_settings["Movement"]["ntiles"]
@@ -108,13 +112,20 @@ class ShinyCatcher:
 
                 # Shiny check
                 if self.elementsOCR.is_shiny_present():
+                    self.play_sound(self.configHandler.settings["Files"]["shiny_sound"])
                     print("SHINY FOUND! Stopping script.")
                     break
 
                 # Battle handling
                 if self.elementsOCR.is_in_battle():
                     self.encounterCounter.record_encounter()
+
+                    pokemon_name = self.elementsOCR.detect_pokemon_name()
+                    if pokemon_name in self.configHandler.settings["OCR"]["wanted_pokemon"]:
+                        self.play_sound(self.configHandler.settings["Files"]["wanted_sound"])
+
                     keyboard.release(self.current_direction)
+
                     while self.elementsOCR.is_in_battle():
                         time.sleep(0.5)
                         self.run_from_battle()
