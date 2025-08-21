@@ -15,7 +15,7 @@ from ConfigHandler import ConfigHandler
 pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
 
 class PokemonElementsOCR:
-    def __init__(self, config_handler, names_file="Resources/pokemon_names.txt"):
+    def __init__(self, config_handler):
         self.configHandler = config_handler
         self.calibrator = VisualCalibrator()
 
@@ -313,7 +313,3 @@ class VisualCalibrator:
         if self.selection_made and self.final_coords:
             return self.final_coords
         return None
-
-if __name__ == '__main__':
-    c = ConfigHandler()
-    a = PokemonElementsOCR(c)

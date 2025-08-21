@@ -71,29 +71,29 @@ class ShinyCatcher:
         # False swipe (if enabled)
         if fs_enabled:
             # Switch to FS pokemon if needed
-            print("step1")
             if sync_enabled or fs_pokemon_position != 1:
                 if self._wait_until_action_ready():
-                    time.sleep(0.1)
+                    time.sleep(1)
                     self._press_key("2") #Open switch menu
                     time.sleep(0.5)
                     self._press_key(fs_pokemon_position)
-            print("step2")
+
             # Use False Swipe
+            time.sleep(1)
             if self._wait_until_action_ready():
                 time.sleep(0.1)
-                self._press_key("2")  # Open attack menu
+                self._press_key("1")  # Open attack menu
                 time.sleep(0.5)
                 self._press_key(fs_move_position)
 
         # Always throw ball
         while self.elementsOCR.is_in_battle():
-            print("step3")
+            time.sleep(1)
             if self._wait_until_action_ready():
                 time.sleep(0.1)
                 self._press_key("3")
+                time.sleep(0.5)
                 self._press_key(ball_to_use)
-            time.sleep(0.5)
 
     def _wait_until_action_ready(self,timeout=10, check_interval=0.2):
         """Wait until icon is ready or timeout"""
