@@ -159,9 +159,10 @@ class ShinyCatcher:
                 # Battle handling
                 if self.elementsOCR.is_in_battle():
                     keyboard.release(self.current_direction)
-                    self.encounterCounter.record_encounter()
 
                     pokemon_name = self.elementsOCR.detect_pokemon_name()
+                    self.encounterCounter.record_encounter(pokemon_name)
+
                     if pokemon_name in self.configHandler.settings["OCR"]["wanted_pokemon"]:
                         self._play_sound(self.configHandler.settings["Files"]["wanted_sound"])
                         self._catch_pokemon()
@@ -192,8 +193,7 @@ class ShinyCatcher:
 
 
 class EncounterCounter:
-    def __init__(self, elementsOCR ,save_path='EncounterLogs'):
-        self.elementsOCR = elementsOCR
+    def __init__(self, save_path='EncounterLogs'):
         self.encounters = defaultdict(int)  # {pokemon_name: count}
         self.total_encounters = 0
         self.start_time = datetime.now()
@@ -202,9 +202,8 @@ class EncounterCounter:
         # Create save directory if it doesn't exist
         os.makedirs(save_path, exist_ok=True)
 
-    def record_encounter(self):
+    def record_encounter(self, pokemon_name):
         """Record a new Pokémon encounter"""
-        pokemon_name = self.elementsOCR.detect_pokemon_name()
         if pokemon_name:  # Only record if we got a valid name
             self.encounters[pokemon_name] += 1
             self.total_encounters += 1
