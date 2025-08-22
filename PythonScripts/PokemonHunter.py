@@ -1,4 +1,6 @@
 import time
+from tkinter.font import names
+
 import keyboard
 import random
 import os
@@ -14,11 +16,13 @@ from PokemonElementsOCR import PokemonElementsOCR
 class ShinyCatcher:
     def __init__(self, config_path="CONFIG.ini"):
         self.configHandler = ConfigHandler(config_path)
-        self.elementsOCR = PokemonElementsOCR(self.configHandler)
         self.encounterCounter = EncounterCounter(self.elementsOCR)
+        self.elementsOCR = PokemonElementsOCR.from_config_handler(self.configHandler)
+
         self.current_direction = self._load_starting_direction()
         self.next_switch_time = 0
         self.next_afk_time = time.time() + self._get_random_afk_interval()
+
 
     def _load_starting_direction(self):
         """Load the starting direction"""
@@ -159,7 +163,8 @@ class ShinyCatcher:
                 if self.elementsOCR.is_in_battle():
                     keyboard.release(self.current_direction)
 
-                    pokemon_name = self.elementsOCR.detect_pokemon_name()
+                    name_region = self.configHandler.get("OCR","name_region")
+                    pokemon_name = self.elementsOCR.detect_pokemon_name(name_region=name_region)
                     if pokemon_name in self.configHandler.get("OCR", "wanted_pokemon"):
                         self._play_sound(self.configHandler.get("Files", "wanted_sound"))
                         self._catch_pokemon()

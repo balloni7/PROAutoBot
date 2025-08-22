@@ -12,15 +12,33 @@ from ConfigHandler import ConfigHandler
 pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
 
 class PokemonElementsOCR:
-    def __init__(self, config_handler):
-        self.configHandler = config_handler
-        self.known_pokemon = self._load_pokemon_names(self.configHandler.settings["Files"]["names_file"])
-        self.shiny_template = self._load_templates(self.configHandler.settings["Files"]["shiny_template"])
-        self.battle_template = self._load_templates(self.configHandler.settings["Files"]["battle_template"])
-        self.gray_action_template = self._load_templates(self.configHandler.settings["Files"]["gray_action_icon"],1)
-        self.red_action_template = self._load_templates(self.configHandler.settings["Files"]["red_action_icon"],1)
+    def __init__(self, names_file, shiny_template_path, battle_template_path,
+                 gray_icon_path, red_icon_path):
+
+        self.known_pokemon = self._load_pokemon_names(names_file) if names_file else None
+        self.shiny_template = self._load_template(shiny_template_path) if shiny_template_path else None
+        self.battle_template = self._load_template(battle_template_path) if battle_template_path else None
+        self.gray_action_template = self._load_template(gray_icon_path, 1) if gray_icon_path else None
+        self.red_action_template = self._load_template(red_icon_path, 1) if red_icon_path else None
 
         self.ocr_config = r'--psm 7 --oem 3 -c tessedit_char_whitelist=ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz- '
+
+
+    @classmethod
+    def from_names_only(cls, names_file):
+        """Factory method for names-only initialization"""
+        return cls(names_file=names_file)
+
+    @classmethod
+    def from_config_handler(cls, config_handler):
+        """Factory method for full initialization from config"""
+        return cls(
+            names_file=config_handler.get("Files", "names_file"),
+            shiny_template_path=config_handler.get("Files", "shiny_template"),
+            battle_template_path=config_handler.get("Files", "battle_template"),
+            gray_icon_path=config_handler.get("Files", "gray_action_icon"),
+            red_icon_path=config_handler.get("Files", "red_action_icon")
+        )
 
     @staticmethod
     def _load_pokemon_names(names_file):
@@ -55,9 +73,8 @@ class PokemonElementsOCR:
         matches = get_close_matches(cleaned.lower(), self.known_pokemon, n=1, cutoff=0.6)
         return matches[0].title() if matches else None
 
-    def detect_pokemon_name(self):
+    def detect_pokemon_name(self, name_region):
         """Capture screen and detect Pokémon name"""
-        name_region = self.configHandler.settings["OCR"]["name_region"]
         try:
             # Capture name area
             screenshot = pyautogui.screenshot(region=name_region)
@@ -79,7 +96,7 @@ class PokemonElementsOCR:
             return None
 
     @staticmethod
-    def _load_templates(image_path, color_mode = 0):
+    def _load_template(image_path, color_mode = 0):
         """ Load the templates from image """
         try:
             template = cv2.imread(image_path, color_mode)

@@ -6,7 +6,7 @@ from ConfigHandler import ConfigHandler
 class CalibrationToolUI:
     def __init__(self, config_path="CONFIG.ini"):
         self.configHandler = ConfigHandler(config_path)
-        self.elementsOCR = PokemonElementsOCR(self.configHandler)
+        self.elementsOCR = PokemonElementsOCR.from_names_only(self.configHandler.get("Files","names_file"))
         self.regionCalibrator = RegionCalibrator()
         self.running = True
 
