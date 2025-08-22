@@ -1,6 +1,7 @@
 import configparser
 import os
 
+
 CONFIG_SCHEMA = {
     'Movement': {
         'ntiles': {'type': int, 'default': 15},
@@ -53,31 +54,13 @@ class ConfigHandler:
         self.configParser = configparser.ConfigParser()
         self.config_path = config_path
         self.schema = CONFIG_SCHEMA
-        self.settings = self._load()
-
-    def _load(self):
-        """Load or create config with automatic validation"""
-
-        # Create default if missing
         if not os.path.exists(self.config_path):
-            self.configParser.read_dict(self._generate_default_dict())
-            self.save_config()
+            self.generate_default_config_file()
         else:
-            try:
-                self.configParser.read(self.config_path)
-            except (ValueError, configparser.Error) as e:
-                print(f"Error reading config: {e}")
-                raise
-
-            if not self._validate():
-                self.configParser.read_dict(self._generate_default_dict())
-                self.save_config()
-
-        return self._parse()
+            self.configParser.read(config_path)
 
     def _generate_default_dict(self):
         """Generate dict with default values from schema"""
-
         # Use a dictionary comprehension to iterate the schema dict
         default_dict = {
             section: {
@@ -86,20 +69,7 @@ class ConfigHandler:
             }
             for section, settings in self.schema.items()
         }
-
         return default_dict
-
-    def _parse(self):
-        """Convert ConfigParser to final format using schema returning a dictionary with all settings"""
-
-        # Use the Schema to convert the values (strings) into its correct datatypes
-        parsed = {}
-        for section, settings in self.schema.items():
-            parsed[section] = {
-                key: settings[key]['type'](self.configParser[section][key])
-                for key in settings
-            }
-        return parsed
 
     def _validate(self):
         """
@@ -115,11 +85,31 @@ class ConfigHandler:
         except (KeyError, AttributeError):
             return False
 
-    def save_config(self):
+    def _save_config(self):
         """SAve current configurations onto a config file"""
         with open(self.config_path, 'w') as f:
             self.configParser.write(f)
 
+    def get(self, section, option, default=None):
+        """Get value with proper type conversion using schema"""
+        try:
+            value_type = self.schema[section][option]['type']
+            raw_value = self.configParser[section][option]
+            return value_type(raw_value)
+        except (KeyError, ValueError):
+            return default if default is not None else self.schema[section][option]['default']
+
+    def set(self, section, option, value):
+        """Set value and auto-save"""
+        if section not in self.configParser:
+            self.configParser[section] = {}
+        self.configParser[section][option] = str(value)
+        self._save_config()
+
     def generate_default_config_file(self):
         self.configParser.read_dict(self._generate_default_dict())
-        self.save_config()
+        self._save_config()
+
+
+
+

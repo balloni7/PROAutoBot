@@ -14,7 +14,6 @@ from PokemonElementsOCR import PokemonElementsOCR
 class ShinyCatcher:
     def __init__(self, config_path="CONFIG.ini"):
         self.configHandler = ConfigHandler(config_path)
-        self.config_settings = self.configHandler.settings
         self.elementsOCR = PokemonElementsOCR(self.configHandler)
         self.encounterCounter = EncounterCounter(self.elementsOCR)
         self.current_direction = self._load_starting_direction()
@@ -23,7 +22,7 @@ class ShinyCatcher:
 
     def _load_starting_direction(self):
         """Load the starting direction"""
-        if self.config_settings["Movement"]["starting_direction"] == "left":
+        if self.configHandler.get("Movement", "starting_direction") == "left":
             return "a"
         else:
             return "d"
@@ -37,8 +36,8 @@ class ShinyCatcher:
 
     def _get_random_afk_interval(self):
         """Calculate random AFK interval"""
-        afk_interval = self.config_settings["Movement"]["afk_interval"]
-        afk_randomness = self.config_settings["Movement"]["afk_randomness"]
+        afk_interval = self.configHandler.get("Movement", "afk_interval")
+        afk_randomness = self.configHandler.get("Movement","afk_randomness")
 
         return random.normalvariate(afk_interval, afk_interval * afk_randomness)
 
@@ -62,11 +61,11 @@ class ShinyCatcher:
 
     def _catch_pokemon(self):
         """Catches Pokemons according to the configs"""
-        sync_enabled = self.configHandler.settings["AutoCatch"]["sync_enabled"]
-        fs_enabled = self.configHandler.settings["AutoCatch"]["fs_enabled"]
-        fs_pokemon_position = self.configHandler.settings["AutoCatch"]["fs_pokemon_position"]
-        fs_move_position =  self.configHandler.settings["AutoCatch"]["fs_move_position"]
-        ball_to_use = self.configHandler.settings["AutoCatch"]["ball_to_use"]
+        sync_enabled = self.configHandler.get("AutoCatch","sync_enabled")
+        fs_enabled = self.configHandler.get("AutoCatch", "fs_enabled")
+        fs_pokemon_position = self.configHandler.get("AutoCatch", "fs_pokemon_position")
+        fs_move_position =  self.configHandler.get("AutoCatch", "fs_move_position")
+        ball_to_use = self.configHandler.get("AutoCatch", "ball_to_use")
 
         # False swipe (if enabled)
         if fs_enabled:
@@ -109,12 +108,12 @@ class ShinyCatcher:
 
     def main(self):
         """Main execution loop"""
-        ntiles = self.config_settings["Movement"]["ntiles"]
-        afk_interval = self.config_settings["Movement"]["afk_interval"]
-        afk_duration = self.config_settings["Movement"]["afk_duration"]
-        movement_speed = self.config_settings["Movement"]["movement_speed"]
-        min_move_time = self.config_settings["Movement"]["min_move_time"]
-        afk_randomness = self.config_settings["Movement"]["afk_randomness"]
+        ntiles = self.configHandler.get("Movement", "ntiles")
+        afk_interval = self.configHandler.get("Movement", "afk_interval")
+        afk_duration = self.configHandler.get("Movement", "afk_duration")
+        movement_speed = self.configHandler.get("Movement","movement_speed")
+        min_move_time = self.configHandler.get("Movement","min_move_time")
+        afk_randomness = self.configHandler.get("Movement","afk_randomness")
 
         print(f"Starting shiny hunter for {ntiles} tiles...")
         print(f"AFK settings: ~{afk_interval / 60:.1f}min active, ~{afk_duration / 60:.1f}min breaks")
@@ -152,7 +151,7 @@ class ShinyCatcher:
 
                 # Shiny check
                 if self.elementsOCR.is_shiny_present():
-                    self._play_sound(self.configHandler.settings["Files"]["shiny_sound"])
+                    self._play_sound(self.configHandler.get("Files","shiny_sound"))
                     print("SHINY FOUND! Stopping script.")
                     break
 
@@ -161,10 +160,8 @@ class ShinyCatcher:
                     keyboard.release(self.current_direction)
 
                     pokemon_name = self.elementsOCR.detect_pokemon_name()
-                    self.encounterCounter.record_encounter(pokemon_name)
-
-                    if pokemon_name in self.configHandler.settings["OCR"]["wanted_pokemon"]:
-                        self._play_sound(self.configHandler.settings["Files"]["wanted_sound"])
+                    if pokemon_name in self.configHandler.get("OCR", "wanted_pokemon"):
+                        self._play_sound(self.configHandler.get("Files", "wanted_sound"))
                         self._catch_pokemon()
 
                     #Run

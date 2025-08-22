@@ -1,3 +1,4 @@
+from RegionCalibrator import RegionCalibrator
 from PokemonElementsOCR import PokemonElementsOCR
 from ConfigHandler import ConfigHandler
 
@@ -5,17 +6,19 @@ from ConfigHandler import ConfigHandler
 class CalibrationToolUI:
     def __init__(self, config_path="CONFIG.ini"):
         self.configHandler = ConfigHandler(config_path)
-        self.detector = PokemonElementsOCR(config_handler=self.configHandler)
+        self.elementsOCR = PokemonElementsOCR(self.configHandler)
+        self.regionCalibrator = RegionCalibrator()
         self.running = True
+
         self._setup_menu()
 
     def _setup_menu(self):
         """Define menu structure"""
         self.menu = {
             "header": self._create_header,
-            "1": {"label": "Change name region", "action": self.detector.calibrate_name_position},
-            "2": {"label": "Detect name", "action": lambda: print(self.detector.detect_pokemon_name())},
-            "save": {"label": "Save", "action": self._save_config},
+            "1": {"label": "Change name region", "action": self.calibrate_name_position},
+            "2": {"label": "Detect name", "action": lambda: print(self.elementsOCR.detect_pokemon_name())},
+            #"save": {"label": "Save", "action": self._save_config},
             "exit": {"label": "Exit", "action": self._exit_tool}
         }
 
@@ -71,10 +74,6 @@ class CalibrationToolUI:
         print("\nExiting calibration tool...")
         self.running = False
 
-    def _save_config(self):
-        self.configHandler.save_config()
-        print("Configuration saved successfully!")
-
     def run(self):
         """Main application loop"""
         self.menu["header"]()
@@ -89,6 +88,15 @@ class CalibrationToolUI:
                 self.menu[choice]["action"]()
             else:
                 print("Invalid selection!")
+
+    def calibrate_name_position(self):
+        """Interactive visual calibration"""
+        try:
+            region = self.regionCalibrator.get_selection()
+            self.configHandler.set("OCR", "name_region", str(region))
+            print(f"\nCalibration successful! New detection Pokemon name region: {region}")
+        except: #TODO: Learn how to correctly implement exceptions
+            print("\nCalibration cancelled.")
 
 
 # Usage example:
