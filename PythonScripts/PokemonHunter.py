@@ -1,6 +1,4 @@
 import time
-from tkinter.font import names
-
 import keyboard
 import random
 import os
@@ -16,7 +14,7 @@ from PokemonElementsOCR import PokemonElementsOCR
 class ShinyCatcher:
     def __init__(self, config_path="CONFIG.ini"):
         self.configHandler = ConfigHandler(config_path)
-        self.encounterCounter = EncounterCounter(self.elementsOCR)
+        self.encounterCounter = EncounterCounter()
         self.elementsOCR = PokemonElementsOCR.from_config_handler(self.configHandler)
 
         self.current_direction = self._load_starting_direction()
@@ -91,7 +89,6 @@ class ShinyCatcher:
 
         # Always throw ball
         while self.elementsOCR.is_in_battle():
-            time.sleep(1)
             if self._wait_until_action_ready():
                 time.sleep(0.1)
                 self._press_key("3")

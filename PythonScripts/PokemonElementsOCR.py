@@ -7,13 +7,14 @@ from difflib import get_close_matches
 
 import sys
 import os
-
-from ConfigHandler import ConfigHandler
 pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
 
 class PokemonElementsOCR:
-    def __init__(self, names_file, shiny_template_path, battle_template_path,
-                 gray_icon_path, red_icon_path):
+    def __init__(self, names_file,
+                 shiny_template_path=None,
+                 battle_template_path=None,
+                 gray_icon_path=None,
+                 red_icon_path=None):
 
         self.known_pokemon = self._load_pokemon_names(names_file) if names_file else None
         self.shiny_template = self._load_template(shiny_template_path) if shiny_template_path else None
@@ -25,9 +26,9 @@ class PokemonElementsOCR:
 
 
     @classmethod
-    def from_names_only(cls, names_file):
+    def from_names_only(cls, config_handler):
         """Factory method for names-only initialization"""
-        return cls(names_file=names_file)
+        return cls(names_file=config_handler.get("Files", "names_file"))
 
     @classmethod
     def from_config_handler(cls, config_handler):

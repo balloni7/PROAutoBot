@@ -6,7 +6,7 @@ from ConfigHandler import ConfigHandler
 class CalibrationToolUI:
     def __init__(self, config_path="CONFIG.ini"):
         self.configHandler = ConfigHandler(config_path)
-        self.elementsOCR = PokemonElementsOCR.from_names_only(self.configHandler.get("Files","names_file"))
+        self.elementsOCR = PokemonElementsOCR.from_names_only(self.configHandler)
         self.regionCalibrator = RegionCalibrator()
         self.running = True
 
@@ -17,7 +17,8 @@ class CalibrationToolUI:
         self.menu = {
             "header": self._create_header,
             "1": {"label": "Change name region", "action": self.calibrate_name_position},
-            "2": {"label": "Detect name", "action": lambda: print(self.elementsOCR.detect_pokemon_name())},
+            "2": {"label": "Detect name", "action":
+                lambda: print(self.elementsOCR.detect_pokemon_name(self.configHandler.get("OCR", "name_region")) )},
             #"save": {"label": "Save", "action": self._save_config},
             "exit": {"label": "Exit", "action": self._exit_tool}
         }
