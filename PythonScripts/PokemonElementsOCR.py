@@ -158,8 +158,5 @@ class PokemonElementsOCR:
         # Get best match values
         _, red_val, _, _ = cv2.minMaxLoc(red_match)
         _, gray_val, _, _ = cv2.minMaxLoc(gray_match)
-
-        print(f"Red: {red_val:.3f}, Gray: {gray_val:.3f}")  # Debug info
-
         # Return state based on which matches better
         return gray_val > red_val
