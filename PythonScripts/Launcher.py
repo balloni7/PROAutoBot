@@ -34,6 +34,20 @@ WIDGET_CONFIG_SCHEMA = [
             'transform': lambda x: str(x)
         },
         {
+            'section': 'Other',
+            'option': 'play_shiny_sound',
+            'widget': 'shiny_sound_bool',
+            'widget_type': 'boolean',
+            'transform': lambda x: str(x)
+        },
+        {
+            'section': 'Other',
+            'option': 'play_wanted_sound',
+            'widget': 'shiny_wanted_bool',
+            'widget_type': 'boolean',
+            'transform': lambda x: str(x)
+        },
+        {
             'section': 'AutoCatch',
             'option': 'fs_pokemon_position',
             'widget': 'fs_pokemon_entry',
