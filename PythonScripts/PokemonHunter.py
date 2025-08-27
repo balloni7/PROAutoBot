@@ -152,7 +152,8 @@ class ShinyCatcher:
 
                 # Shiny check
                 if self.elementsOCR.is_shiny_present():
-                    self._play_sound(self.configHandler.get("Files","shiny_sound"))
+                    if self.configHandler.get("Other", "play_wanted_sound"):
+                        self._play_sound(self.configHandler.get("Files", "shiny_sound"))
                     print("SHINY FOUND! Stopping script.")
                     break
 
@@ -164,7 +165,8 @@ class ShinyCatcher:
                     pokemon_name = self.elementsOCR.detect_pokemon_name(name_region=name_region)
                     self.encounterCounter.record_encounter(pokemon_name)
                     if pokemon_name in self.configHandler.get("OCR", "wanted_pokemon"):
-                        self._play_sound(self.configHandler.get("Files", "wanted_sound"))
+                        if self.configHandler.get("Other", "play_wanted_sound"):
+                            self._play_sound(self.configHandler.get("Files", "wanted_sound"))
                         self._catch_pokemon()
 
                     #Run

@@ -40,10 +40,14 @@ CONFIG_SCHEMA = {
         'names_file': {'type': str, 'default': 'Resources/pokemon_names.txt'},
         'shiny_template': {'type': str, 'default': 'Resources/shiny_message.png'},
         'battle_template': {'type': str, 'default': 'Resources/battle_template.png'},
-        'gray_action_icon': {'type':str, 'default': 'Resources/gray_action_icon.png'},
-        'red_action_icon': {'type':str, 'default': 'Resources/red_action_icon.png'},
-        'shiny_sound': {'type':str, 'default': 'Resources/ShinyEncounterSound.wav'},
-        'wanted_sound': {'type':str, 'default': 'Resources/WantedEncounterSound.wav'}
+        'gray_action_icon': {'type': str, 'default': 'Resources/gray_action_icon.png'},
+        'red_action_icon': {'type': str, 'default': 'Resources/red_action_icon.png'},
+        'shiny_sound': {'type': str, 'default': 'Resources/ShinyEncounterSound.wav'},
+        'wanted_sound': {'type': str, 'default': 'Resources/WantedEncounterSound.wav'}
+    },
+    'Other': {
+        'play_shiny_sound': {'type': lambda x: True if x == "True" else False, 'default': True},
+        'play_wanted_sound': {'type': lambda x: True if x == "True" else False, 'default': True}
     }
 }
 
