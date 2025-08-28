@@ -1,4 +1,0 @@
-- It does detect the message and is able to tell when the pokemon is caught.
-- But then it must also wait for the battle to finish before running the check again, otherwise it register the pokemon twice
-- This is too much work right now for the payoff
-- Revisit later
